@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "strictNullChecks": true,
+    "target": "es6",
+    "sourceMap": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "declaration": true,
+    "pretty": true,
+    "module": "commonjs",
+    "removeComments": false,
+    "noUnusedLocals": true,
+    "lib": ["dom", "es6", "es7", "es2015"],
+    "outDir": "./.build",
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": [
+    "./src/**/*.ts",
+    "./tests/**/*.ts"
+  ],
+  "exclude": [
+    "./lib"
+  ]
+}

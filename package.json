@@ -1,0 +1,23 @@
+{
+  "name": "@frptools/structural",
+  "version": "1.0.0",
+  "description": "Tools for implementing high performance, batch-mutation-capable persistent data structures",
+  "scripts": {
+    "test-dev": "mocha --opts ./mocha.opts --watch --bail"
+  },
+  "main": "lib/commonjs/index.js",
+  "module": "lib/module/index.js",
+  "jsnext:main": "lib/module/index.js",
+  "typings": "lib/typings/index.d.ts",
+  "files": [
+    "lib"
+  ],
+  "author": "Nathan Ridley <axefrog@gmail.com>",
+  "license": "MIT",
+  "bugs": "https://github.com/frptools/mutation/issues",
+  "repository": "git@github.com:frptools/mutation.git",
+  "devDependencies": {
+    "tslint": "^5.9.1",
+    "typescript": "^2.6.2"
+  }
+}
