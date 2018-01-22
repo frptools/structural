@@ -1,6 +1,9 @@
 import * as F from '@frptools/corelib';
 
 export type PreferredContext = Persistent | MutationContext | boolean;
+export interface PersistentConstructor<T extends Persistent = Persistent> {
+  new (...args: any[]): T;
+}
 
 /**
  * All persistent structures must implement this interface in order to participate in batches of
@@ -99,8 +102,21 @@ export class MutationContext {
  *   a new mutable context. If omitted, the existing mutation context is shadowed.
  * @returns {T} A cloned instance of a persistent structure
  */
-export function clone<T extends Persistent>(value: T, mutability?: PreferredContext): T {
-  return <T>value['@@clone'](selectContext(mutability));
+export function clone<T extends Persistent>(value: T, pctx?: PreferredContext): T {
+  return <T>value['@@clone'](selectContext(pctx));
+}
+
+/**
+ * Checks whether the input function constructs an instance of the `Persistent` interface.
+ *
+ * @export
+ * @param {Function} value A function to test
+ * @returns {value is PersistentConstructor} true if the value implements the `Persistent` interface, otherwise false
+ */
+export function isPersistentConstructor (value: Function): value is PersistentConstructor;
+export function isPersistentConstructor (value: Function): boolean;
+export function isPersistentConstructor (value: Function) {
+  return F.isFunction(value) && F.isFunction(value.prototype['@@clone']);
 }
 
 /**
@@ -116,6 +132,7 @@ export function isPersistent (value: object): boolean;
 export function isPersistent (value: object) {
   return '@@mctx' in <any>value;
 }
+
 /**
  * Returns the default frozen mutation context for use with new immutable objects. This function
  * should only be used when constructing the first version of a new persistent object. Any
@@ -159,15 +176,20 @@ export function mutable (): MutationContext {
  * @export
  * @returns {MutationContext}
  */
-export function selectContext (mutability?: PreferredContext): MutationContext {
-  return mutability === void 0 ? FROZEN
-    : F.isBoolean(mutability) ? mutability ? mutable() : FROZEN
-      : isMutationContext(mutability) ? mutability
-        : getSubordinateContext(mutability);
+export function selectContext (pctx?: PreferredContext): MutationContext {
+  return pctx === void 0 ? FROZEN
+    : F.isBoolean(pctx) ? pctx ? mutable() : FROZEN
+    // : isMutationContext(pctx) ? isMutableContext(pctx) ? pctx : FROZEN
+    : isMutationContext(pctx) ? isMutableContext(pctx) ? pctx : FROZEN
+    : getSubordinateContext(pctx);
 }
 
 export function getMutationContext (value: Persistent): MutationContext {
-  return value['@@mctx'];
+  const mctx = value['@@mctx'];
+  if (F.isUndefined(mctx)) {
+    F.throwInvalidOperation('Attempted to obtain a mutation context from an invalid target');
+  }
+  return mctx;
 }
 
 /**
@@ -359,26 +381,26 @@ export function modifyProperty<T extends Persistent & {[N in P]: R}, P extends k
  *
  * @export
  * @template T The type of the persistent value to apply the specified mutability argument to
- * @param {(PreferredContext|undefined)} mutability The desired mutability of the return value
+ * @param {(PreferredContext|undefined)} pctx The desired mutability of the return value
  * @param {T} value A value to align with the desired mutability
  * @returns {T} A reference to, or clone of, the `value` argument
  */
-export function withMutability<T extends Persistent>(mutability: PreferredContext | undefined, value: T): T {
+export function withMutability<T extends Persistent>(pctx: PreferredContext | undefined, value: T): T {
   let mctx: MutationContext;
-  if (mutability === void 0) {
+  if (pctx === void 0) {
     mctx = FROZEN;
   }
-  else if (F.isBoolean(mutability)) {
-    if (mutability === isMutable(value)) return value;
-    mctx = mutability ? mutable() : FROZEN;
+  else if (F.isBoolean(pctx)) {
+    if (pctx === isMutable(value)) return value;
+    mctx = pctx ? mutable() : FROZEN;
   }
-  else if (isMutationContext(mutability)) {
-    if (isRelatedContext(mutability, getMutationContext(value))) return value;
-    mctx = mutability;
+  else if (isMutationContext(pctx)) {
+    if (isRelatedContext(pctx, getMutationContext(value))) return value;
+    mctx = pctx;
   }
   else {
-    if (areContextsRelated(mutability, value)) return value;
-    mctx = getSubordinateContext(mutability);
+    if (areContextsRelated(pctx, value)) return value;
+    mctx = getSubordinateContext(pctx);
   }
   value = <T>value['@@clone'](mctx);
   return value;
